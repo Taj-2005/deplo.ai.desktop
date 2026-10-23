@@ -55,9 +55,12 @@ export function isTokenValid(token: string): boolean {
 }
 
 export function getGithubAuthUrl(forceAccountPicker = false): string {
-  // Same-origin — the Next.js rewrite proxies this to the backend, which
-  // 302-redirects the browser to GitHub. Keeps the user on the frontend domain.
-  const base = `${getApiBaseUrl()}/api/v1/auth/github`;
+  const isDesktop =
+    typeof window !== "undefined" &&
+    (window as Window & { desktop?: { isElectron?: boolean } }).desktop?.isElectron;
+  const base = isDesktop
+    ? "https://deplo-ai.onrender.com/api/v1/auth/github"
+    : `${getApiBaseUrl()}/api/v1/auth/github`;
   return forceAccountPicker ? `${base}?prompt=select_account` : base;
 }
 
