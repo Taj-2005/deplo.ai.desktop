@@ -6,6 +6,45 @@ const path = require("node:path");
 const isDevelopment = process.argv.includes("--dev");
 const port = Number(process.env.PORT) || 3000;
 let nextServer;
+let mainWindow;
+let pendingDeepLink;
+
+function getDeepLinkPath(url) {
+  try {
+    const deepLink = new URL(url);
+    if (deepLink.protocol !== "deplo:") return "/";
+    return deepLink.pathname === "/dashboard" ? "/dashboard" : "/";
+  } catch {
+    return "/";
+  }
+}
+
+function handleDeepLink(url) {
+  if (!url) return;
+  if (!mainWindow) {
+    pendingDeepLink = url;
+    return;
+  }
+  void mainWindow.loadURL(`${getAppUrl()}${getDeepLinkPath(url)}`);
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+}
+
+if (process.platform === "darwin") {
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    handleDeepLink(url);
+  });
+}
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
+app.on("second-instance", (_event, commandLine) => {
+  handleDeepLink(commandLine.find((argument) => argument.startsWith("deplo://")));
+});
 
 function getAppUrl() {
   return `http://127.0.0.1:${port}`;
@@ -63,7 +102,7 @@ async function waitForNextServer() {
 }
 
 function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
@@ -77,18 +116,22 @@ function createWindow() {
     },
   });
 
-  window.webContents.setWindowOpenHandler(({ url }) => {
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith("deplo://")) {
+      handleDeepLink(url);
+      return { action: "deny" };
+    }
     if (url.startsWith("https://") || url.startsWith("http://")) {
       void shell.openExternal(url);
     }
     return { action: "deny" };
   });
 
-  window.webContents.on("will-navigate", (event, url) => {
+  mainWindow.webContents.on("will-navigate", (event, url) => {
     if (isHostedAppUrl(url)) {
       const hostedUrl = new URL(url);
       event.preventDefault();
-      void window.loadURL(
+      void mainWindow.loadURL(
         `${getAppUrl()}${hostedUrl.pathname}${hostedUrl.search}${hostedUrl.hash}`,
       );
       return;
@@ -100,10 +143,14 @@ function createWindow() {
     }
   });
 
-  void window.loadURL(getAppUrl());
+  void mainWindow.loadURL(getAppUrl());
 }
 
 app.whenReady().then(async () => {
+  if (!gotSingleInstanceLock) return;
+
+  app.setAsDefaultProtocolClient("deplo");
+
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
   });
@@ -114,6 +161,10 @@ app.whenReady().then(async () => {
   }
 
   createWindow();
+  handleDeepLink(
+    pendingDeepLink ||
+      process.argv.find((argument) => argument.startsWith("deplo://")),
+  );
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

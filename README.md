@@ -113,6 +113,11 @@ GitHub OAuth is routed through the Electron window:
 External websites unrelated to authentication continue to open in the system
 browser.
 
+The public landing page uses the `deplo://launch` protocol to open an
+installed Deplo Desktop application. The packaged app registers this protocol
+with macOS, Windows, and Linux and brings an existing app instance to the
+foreground when the link is activated.
+
 ## macOS first launch
 
 Local builds are not signed or notarized unless valid Apple Developer

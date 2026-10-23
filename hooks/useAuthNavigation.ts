@@ -8,6 +8,12 @@ export function useAuthNavigation() {
   const router = useRouter();
 
   function launchApp(): void {
+    const desktopWindow = window as Window & { desktop?: { isElectron?: boolean } };
+    if (!desktopWindow.desktop?.isElectron) {
+      window.location.href = "deplo://launch";
+      return;
+    }
+
     if (isAuthenticated) {
       router.push("/dashboard");
     } else {
