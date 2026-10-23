@@ -55,6 +55,11 @@ function isHostedAppUrl(url) {
   return hostname === "deplo.in" || hostname === "www.deplo.in";
 }
 
+function isHostedApiUrl(url) {
+  const parsedUrl = new URL(url);
+  return isHostedAppUrl(url) && parsedUrl.pathname.startsWith("/api/");
+}
+
 function isProductionApiUrl(url) {
   return new URL(url).hostname === "deplo-ai.onrender.com";
 }
@@ -94,6 +99,10 @@ function navigateInApp(url) {
 
   if (isHostedAppUrl(url)) {
     const hostedUrl = new URL(url);
+    if (isHostedApiUrl(url)) {
+      void mainWindow.loadURL(url);
+      return true;
+    }
     void mainWindow.loadURL(
       `${getAppUrl()}${hostedUrl.pathname}${hostedUrl.search}${hostedUrl.hash}`,
     );
@@ -115,6 +124,10 @@ function navigateInApp(url) {
 
 function handleNavigation(event, url) {
   if (new URL(url).origin === getAppUrl()) {
+    return;
+  }
+
+  if (isHostedApiUrl(url) || isProductionApiUrl(url)) {
     return;
   }
 
