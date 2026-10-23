@@ -55,6 +55,10 @@ function isHostedAppUrl(url) {
   return hostname === "deplo.in" || hostname === "www.deplo.in";
 }
 
+function isProductionApiUrl(url) {
+  return new URL(url).hostname === "deplo-ai.onrender.com";
+}
+
 function isLocalAppUrl(url) {
   const parsedUrl = new URL(url);
   return (
@@ -96,6 +100,11 @@ function navigateInApp(url) {
     return true;
   }
 
+  if (isProductionApiUrl(url)) {
+    void mainWindow.loadURL(url);
+    return true;
+  }
+
   if (isAllowedAppNavigation(url)) {
     void mainWindow.loadURL(url);
     return true;
@@ -109,7 +118,12 @@ function handleNavigation(event, url) {
     return;
   }
 
-  if (isLocalAppUrl(url) || isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
+  if (
+    isLocalAppUrl(url) ||
+    isHostedAppUrl(url) ||
+    isProductionApiUrl(url) ||
+    isAllowedAppNavigation(url)
+  ) {
     event.preventDefault();
     navigateInApp(url);
     return;
@@ -173,7 +187,11 @@ function createWindow() {
       handleDeepLink(url);
       return { action: "deny" };
     }
-    if (isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
+    if (
+      isHostedAppUrl(url) ||
+      isProductionApiUrl(url) ||
+      isAllowedAppNavigation(url)
+    ) {
       navigateInApp(url);
       return { action: "deny" };
     }
