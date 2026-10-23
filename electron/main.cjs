@@ -69,6 +69,23 @@ function isAllowedAppNavigation(url) {
   );
 }
 
+function navigateInApp(url) {
+  if (isHostedAppUrl(url)) {
+    const hostedUrl = new URL(url);
+    void mainWindow.loadURL(
+      `${getAppUrl()}${hostedUrl.pathname}${hostedUrl.search}${hostedUrl.hash}`,
+    );
+    return true;
+  }
+
+  if (isAllowedAppNavigation(url)) {
+    void mainWindow.loadURL(url);
+    return true;
+  }
+
+  return false;
+}
+
 function startNextServer() {
   const serverPath = path.join(app.getAppPath(), ".next", "standalone", "server.js");
 
@@ -121,6 +138,10 @@ function createWindow() {
       handleDeepLink(url);
       return { action: "deny" };
     }
+    if (isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
+      navigateInApp(url);
+      return { action: "deny" };
+    }
     if (url.startsWith("https://") || url.startsWith("http://")) {
       void shell.openExternal(url);
     }
@@ -128,12 +149,9 @@ function createWindow() {
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (isHostedAppUrl(url)) {
-      const hostedUrl = new URL(url);
+    if (isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
       event.preventDefault();
-      void mainWindow.loadURL(
-        `${getAppUrl()}${hostedUrl.pathname}${hostedUrl.search}${hostedUrl.hash}`,
-      );
+      navigateInApp(url);
       return;
     }
 

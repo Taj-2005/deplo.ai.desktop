@@ -100,14 +100,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(() => {
     // Force GitHub's account picker when the last action was an explicit
     // sign-out, so the user isn't silently returned to the account they left.
-    window.location.href = getGithubAuthUrl(consumeSignedOut());
+    window.location.assign(getGithubAuthUrl(consumeSignedOut()));
   }, []);
 
   const signOut = useCallback(() => {
     markSignedOut();
     clearToken();
     setUser(null);
-    window.location.href = "/";
+    window.location.assign("/");
   }, []);
 
   const handleCallback = useCallback((token: string) => {
