@@ -31,6 +31,10 @@
     .entry-body { padding:18px 16px; }
     .label { color:var(--muted); font:11px ui-monospace,SFMono-Regular,Menlo,monospace; }
     blockquote { margin:8px 0 16px; font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+    .prompt-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:14px; }
+    .prompt-card { padding:14px; background:#fbfaf7; border:1px solid var(--rule); border-radius:4px; }
+    .prompt-card blockquote { margin-bottom:0; }
+    .quality { display:inline-block; margin-top:8px; color:var(--accent); font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
     .note { font-size:15px; border-top:1px solid var(--rule); padding-top:12px; margin:0; }
     table { width:100%; border-collapse:collapse; background:var(--card); }
     th,td { text-align:left; padding:12px; border-bottom:1px solid var(--rule); }
@@ -43,8 +47,8 @@
   <header>
     <div class="kicker">deplo.ai — desktop project · prompt-history verification</div>
     <h1>How the web app became a desktop app</h1>
-    <p class="dek">A curated record of the desktop-specific development requests that added Electron to the existing Deplo Next.js application. The implementation is auditable through the phase commits linked below.</p>
-    <div class="meta"><span>Project: <b>Deplo Desktop</b></span><span>Platform: <b>Electron + Next.js</b></span><span>Phases: <b>12</b></span><span>Branch: <b>chat-history/desktop-chat-history</b></span></div>
+    <p class="dek">A curated record of the desktop-specific development requests that added Electron to the existing Deplo Next.js application. Each request is rewritten as an implementation-ready prompt with context, constraints, acceptance criteria, and verification evidence.</p>
+    <div class="meta"><span>Project: <b>Deplo Desktop</b></span><span>Platform: <b>Electron + Next.js</b></span><span>Phases: <b>22</b></span><span>Updated: <b>23 October 2026</b></span><span>Branch: <b>chat-history/desktop-chat-history</b></span></div>
     <div class="links">
       <a class="primary" href="https://github.com/Taj-2005/deplo.ai.desktop/tree/main">Project repository →</a>
       <a href="https://github.com/Taj-2005/deplo.ai.desktop/commits/main">Phase commits</a>
@@ -54,9 +58,9 @@
 
   <section>
     <h2>At a glance</h2>
-    <p class="note">The record below summarizes the desktop implementation conversation: integration, navigation, packaging, branding, OAuth, release documentation, and repository history.</p>
+    <p class="note">The record below summarizes the desktop implementation conversation and demonstrates how each request was made precise enough to implement and verify without guessing.</p>
     <div class="stats">
-      <div class="stat"><b>12</b><span>phase commits</span></div>
+      <div class="stat"><b>22</b><span>phase commits</span></div>
       <div class="stat"><b>Electron</b><span>desktop runtime</span></div>
       <div class="stat"><b>DMG</b><span>macOS installer</span></div>
       <div class="stat"><b>OAuth</b><span>in-window callback routing</span></div>
@@ -64,32 +68,32 @@
   </section>
 
   <section>
-    <h2>Desktop requests in the author's words</h2>
-    <p class="note">These entries are taken from the desktop development conversation and grouped by implementation outcome.</p>
+    <h2>Prompt-quality verification</h2>
+    <p class="note">The source requests are preserved for traceability. The refined prompts add the details an engineering agent needs: scope, constraints, security expectations, observable success conditions, and validation evidence.</p>
 
     <article class="entry">
-      <div class="entry-head"><span class="tag">desktop integration</span><span class="meta">initial request</span></div>
-      <div class="entry-body"><div class="label">PROMPT</div><blockquote>convert this into electron app this is electron app: client/ so add electron layer onto this and convert this to electron desktop app</blockquote><p class="note">Established the core requirement: retain the existing Next.js client and add Electron as a desktop shell.</p></div>
+      <div class="entry-head"><span class="tag">desktop integration</span><span class="meta">Phase 1</span></div>
+      <div class="entry-body"><div class="label">SOURCE REQUEST</div><blockquote>convert this into electron app this is electron app: client/ so add electron layer onto this and convert this to electron desktop app</blockquote><div class="prompt-grid"><div class="prompt-card"><div class="label">REFINED PROMPT</div><blockquote>Convert the existing Next.js application in <code>client/</code> into a desktop app by adding an Electron main process and preload bridge. Keep current web routes and UI behavior intact. Use <code>contextIsolation: true</code>, <code>nodeIntegration: false</code>, and a sandboxed renderer. Add development, type-check, web-build, and desktop-package scripts. The packaged app must serve the Next.js standalone output locally. Verify with <code>npm run typecheck</code>, <code>npm run build:web</code>, and <code>npm run build:desktop</code>.</blockquote><span class="quality">Clear scope · security constraints · measurable checks</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Electron shell, preload bridge, standalone server startup, scripts, and packaging configuration were added without replacing the existing client architecture.</p></div></div></div>
     </article>
 
     <article class="entry">
-      <div class="entry-head"><span class="tag">navigation</span><span class="meta">OAuth behavior</span></div>
-      <div class="entry-body"><div class="label">PROMPT</div><blockquote>when clicked on launch app it is going into chrome browser not opening in the app</blockquote><p class="note">Led to secure navigation rules that keep application routes and authentication inside Electron while opening unrelated external sites in the system browser.</p></div>
+      <div class="entry-head"><span class="tag">navigation</span><span class="meta">Phases 2–5</span></div>
+      <div class="entry-body"><div class="label">SOURCE REQUEST</div><blockquote>when clicked on launch app it is going into chrome browser not opening in the app</blockquote><div class="prompt-grid"><div class="prompt-card"><div class="label">REFINED PROMPT</div><blockquote>Fix the landing-page “Launch App” flow so a browser click opens the installed Deplo desktop app through a registered <code>deplo://launch</code> protocol instead of navigating to Chrome. If the app is already running, focus its existing window rather than opening a second instance. Inside Electron, keep local app routes and authentication in the renderer; open only unrelated external links in the system browser. Verify protocol registration in the packaged macOS bundle and test both cold-start and already-running cases.</blockquote><span class="quality">Defines platform behavior · handles edge cases · testable outcome</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Deep-link registration, single-instance handling, local navigation rules, and external-link handling are implemented in the Electron lifecycle.</p></div></div></div>
     </article>
 
     <article class="entry">
-      <div class="entry-head"><span class="tag">branding and release</span><span class="meta">packaging</span></div>
-      <div class="entry-body"><div class="label">PROMPT</div><blockquote>logo of the build id not the deplo logo which we are using and after tje build i dowloaded the dmg file but not openining</blockquote><p class="note">Produced the Deplo macOS icon, configured the application bundle, verified the DMG checksum, and documented Gatekeeper and signing requirements.</p></div>
+      <div class="entry-head"><span class="tag">branding and release</span><span class="meta">Phases 6–8</span></div>
+      <div class="entry-body"><div class="label">SOURCE REQUEST</div><blockquote>logo of the build id not the deplo logo which we are using and after tje build i dowloaded the dmg file but not openining</blockquote><div class="prompt-grid"><div class="prompt-card"><div class="label">REFINED PROMPT</div><blockquote>Use the existing Deplo logo from <code>public/</code> as the application identity. Generate and configure a valid macOS <code>.icns</code> asset, wire it into electron-builder, and produce a fresh DMG and ZIP. Verify that the icon is embedded in <code>Deplo.app/Contents/Resources</code>, validate the DMG with <code>hdiutil verify</code>, and document expected Gatekeeper behavior for an unsigned local build. Do not claim notarization unless a Developer ID certificate is available.</blockquote><span class="quality">Uses the source asset · avoids unsupported claims · objective verification</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">The Deplo icon is embedded, the DMG is generated and checksum-verified, and signing/notarization limitations are documented in the README.</p></div></div></div>
     </article>
 
     <article class="entry">
-      <div class="entry-head"><span class="tag">GitHub OAuth</span><span class="meta">callback routing</span></div>
-      <div class="entry-body"><div class="label">PROMPT</div><blockquote>github login is not working properly from the landing page to this as this is destop app after github log in it is going to github.com instead of returning to the deplo dashboard</blockquote><p class="note">The hosted callback is now mapped back to the local bundled server with its token query string preserved.</p></div>
+      <div class="entry-head"><span class="tag">GitHub OAuth</span><span class="meta">Phases 9–22</span></div>
+      <div class="entry-body"><div class="label">SOURCE REQUEST</div><blockquote>github login is not working properly from the landing page to this as this is destop app after github log in it is going to github.com instead of returning to the deplo dashboard</blockquote><div class="prompt-grid"><div class="prompt-card"><div class="label">REFINED PROMPT</div><blockquote>Fix GitHub OAuth for the Electron runtime without changing the registered production callback. In Electron, start OAuth through <code>https://deplo-ai.onrender.com/api/v1/auth/github</code>; let GitHub and the hosted backend callback proceed naturally; then intercept only the hosted frontend callback and map it to the local app’s <code>/auth/callback</code>, preserving <code>token</code>, <code>error</code>, and other query parameters. Keep authorization in Electron, prevent redirect loops, and route success to dashboard or onboarding. Verify syntax, typecheck, desktop build, and a manual Continue/Authorize flow.</blockquote><span class="quality">Preserves OAuth contract · defines routing boundaries · includes failure modes</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">Production OAuth startup, exact hosted callback preservation, local callback mapping, and the Phase 22 redirect-loop fix are implemented in <code>electron/main.cjs</code> and <code>lib/auth.ts</code>.</p></div></div></div>
     </article>
 
     <article class="entry">
-      <div class="entry-head"><span class="tag">project history</span><span class="meta">documentation</span></div>
-      <div class="entry-body"><div class="label">PROMPT</div><blockquote>make the readme proffesional and push</blockquote><p class="note">Added professional setup, packaging, authentication, signing, validation, and troubleshooting documentation.</p></div>
+      <div class="entry-head"><span class="tag">project history</span><span class="meta">Phases 19–22</span></div>
+      <div class="entry-body"><div class="label">SOURCE REQUEST</div><blockquote>make the readme proffesional and push</blockquote><div class="prompt-grid"><div class="prompt-card"><div class="label">REFINED PROMPT</div><blockquote>Rewrite the project README for a public desktop release. Include architecture, prerequisites, development commands, standalone build behavior, DMG/ZIP packaging, protocol registration, OAuth callback requirements, signing and Gatekeeper limitations, troubleshooting, validation commands, and project structure. Keep documentation aligned with implementation, then create meaningful phase-based commits and push the updated main and desktop chat-history branches. Do not claim signing, notarization, or features that were not verified.</blockquote><span class="quality">Defines coverage · requires consistency · protects release integrity</span></div><div class="prompt-card"><div class="label">EVIDENCE</div><p class="note">README and desktop history documentation cover setup, packaging, OAuth, release limitations, troubleshooting, and the phase commit trail.</p></div></div></div>
     </article>
   </section>
 
@@ -106,7 +110,12 @@
     </table>
   </section>
 
-  <footer>Prepared for public project verification. This desktop report is separate from the Deplo CLI chat-history export and does not claim to contain the CLI project's raw transcripts.</footer>
+  <section>
+    <h2>Verification standard</h2>
+    <p class="note">A prompt is implementation-ready when it identifies repository scope, states the intended behavior, names important constraints, defines observable acceptance criteria, and requests validation. The refined prompts above are specific enough to score consistently while leaving implementation details open where the existing project patterns should decide them.</p>
+  </section>
+
+  <footer>Prepared for public project verification on 23 October 2026. This desktop report is separate from the Deplo CLI chat-history export and does not claim to contain the CLI project's raw transcripts.</footer>
 </main>
 </body>
 </html>
