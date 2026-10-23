@@ -55,9 +55,22 @@ function isHostedAppUrl(url) {
   return hostname === "deplo.in" || hostname === "www.deplo.in";
 }
 
+function isLocalAppUrl(url) {
+  const parsedUrl = new URL(url);
+  return (
+    (parsedUrl.hostname === "localhost" || parsedUrl.hostname === "127.0.0.1") &&
+    parsedUrl.port === String(port)
+  );
+}
+
+function getLocalAppUrl(url) {
+  const localUrl = new URL(url);
+  return `${getAppUrl()}${localUrl.pathname}${localUrl.search}${localUrl.hash}`;
+}
+
 function isAllowedAppNavigation(url) {
   const { hostname, origin } = new URL(url);
-  if (origin === getAppUrl()) {
+  if (origin === getAppUrl() || isLocalAppUrl(url)) {
     return true;
   }
 
@@ -70,6 +83,11 @@ function isAllowedAppNavigation(url) {
 }
 
 function navigateInApp(url) {
+  if (isLocalAppUrl(url)) {
+    void mainWindow.loadURL(getLocalAppUrl(url));
+    return true;
+  }
+
   if (isHostedAppUrl(url)) {
     const hostedUrl = new URL(url);
     void mainWindow.loadURL(
@@ -91,7 +109,7 @@ function handleNavigation(event, url) {
     return;
   }
 
-  if (isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
+  if (isLocalAppUrl(url) || isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
     event.preventDefault();
     navigateInApp(url);
     return;
