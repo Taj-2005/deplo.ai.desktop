@@ -41,6 +41,14 @@
     "appId": "ai.deplo.desktop",
     "productName": "Deplo",
     "asar": true,
+    "protocols": [
+      {
+        "name": "Deplo Desktop",
+        "schemes": [
+          "deplo"
+        ]
+      }
+    ],
     "files": [
       "electron/**/*",
       ".next/standalone/**/*",
