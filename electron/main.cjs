@@ -131,14 +131,15 @@ function handleNavigation(event, url) {
     return;
   }
 
-  if (
-    isLocalAppUrl(url) ||
-    isHostedAppUrl(url) ||
-    isProductionApiUrl(url) ||
-    isAllowedAppNavigation(url)
-  ) {
+  if (isLocalAppUrl(url) || isHostedAppUrl(url)) {
     event.preventDefault();
     navigateInApp(url);
+    return;
+  }
+
+  // Let GitHub complete its own login and authorization redirects. Cancelling
+  // each GitHub redirect and reloading it can invalidate the OAuth flow.
+  if (isAllowedAppNavigation(url)) {
     return;
   }
 
