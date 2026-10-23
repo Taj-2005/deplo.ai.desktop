@@ -86,6 +86,23 @@ function navigateInApp(url) {
   return false;
 }
 
+function handleNavigation(event, url) {
+  if (new URL(url).origin === getAppUrl()) {
+    return;
+  }
+
+  if (isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
+    event.preventDefault();
+    navigateInApp(url);
+    return;
+  }
+
+  if (!isAllowedAppNavigation(url)) {
+    event.preventDefault();
+    void shell.openExternal(url);
+  }
+}
+
 function startNextServer() {
   const serverPath = path.join(app.getAppPath(), ".next", "standalone", "server.js");
 
@@ -149,16 +166,11 @@ function createWindow() {
   });
 
   mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (isHostedAppUrl(url) || isAllowedAppNavigation(url)) {
-      event.preventDefault();
-      navigateInApp(url);
-      return;
-    }
+    handleNavigation(event, url);
+  });
 
-    if (!isAllowedAppNavigation(url)) {
-      event.preventDefault();
-      void shell.openExternal(url);
-    }
+  mainWindow.webContents.on("will-redirect", (event, url) => {
+    handleNavigation(event, url);
   });
 
   void mainWindow.loadURL(getAppUrl());
@@ -167,7 +179,13 @@ function createWindow() {
 app.whenReady().then(async () => {
   if (!gotSingleInstanceLock) return;
 
-  app.setAsDefaultProtocolClient("deplo");
+  if (isDevelopment && process.platform === "darwin") {
+    app.setAsDefaultProtocolClient("deplo", process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  } else {
+    app.setAsDefaultProtocolClient("deplo");
+  }
 
   session.defaultSession.setPermissionRequestHandler((_webContents, _permission, callback) => {
     callback(false);
