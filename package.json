@@ -1,0 +1,64 @@
+{
+  "name": "deploy-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deplo desktop app",
+  "author": "Deplo",
+  "scripts": {
+    "dev": "concurrently -k \"next dev -p 3000\" \"wait-on http://localhost:3000 && electron . --dev\"",
+    "dev:web": "next dev",
+    "build:web": "next build && node scripts/copy-standalone-assets.mjs",
+    "build:desktop": "npm run build:web && electron-builder",
+    "start": "next start",
+    "start:desktop": "electron .",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "boneyard-js": "^1.8.1",
+    "framer-motion": "^12.39.0",
+    "lucide-react": "^1.16.0",
+    "next": "16.3.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "^9",
+    "electron": "^39",
+    "electron-builder": "^26",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "wait-on": "^8"
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "ai.deplo.desktop",
+    "productName": "Deplo",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      ".next/standalone/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "electron/assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Development"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}
