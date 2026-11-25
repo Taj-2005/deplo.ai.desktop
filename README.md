@@ -88,9 +88,31 @@ Installers are written to `dist/`. The configured targets are:
 
 | Platform | Output |
 | --- | --- |
-| macOS | DMG and ZIP |
+| macOS | DMG and ZIP (arm64) |
 | Windows | NSIS installer |
 | Linux | AppImage |
+
+### Build an unsigned macOS DMG (Apple Silicon)
+
+```bash
+npm run build:mac
+```
+
+This runs `build:web` and then packages the desktop app for macOS, producing
+an **unsigned, arm64-only** DMG and ZIP in `dist/`:
+
+```text
+dist/Deplo-<version>-arm64.dmg
+dist/Deplo-<version>-arm64-mac.zip
+```
+
+No Apple Developer account, certificate, or notarization credentials are
+required or used — `mac.identity`, `mac.notarize`, and `mac.gatekeeperAssess`
+are explicitly disabled in the `build` config in `package.json`. This is
+intended for development and testing distribution only; see
+[macOS first launch](#macos-first-launch) for what end users need to do to
+open an unsigned build, and the **Public distribution** note below for what
+real App Store / Developer ID distribution would additionally require.
 
 To run the packaged-style application locally after building the web output:
 
@@ -120,27 +142,59 @@ foreground when the link is activated.
 
 ## macOS first launch
 
-Local builds are not signed or notarized unless valid Apple Developer
-credentials are configured. macOS may show a security warning for a downloaded
-DMG.
+`npm run build:mac` (and `build:desktop` on macOS) produce an **unsigned**
+build: no Apple Developer ID certificate and no notarization are applied.
+This is a deliberate, free development/testing distribution setup — macOS's
+Gatekeeper will not recognize the app as coming from an identified developer,
+and will warn when it's first opened. That warning does not mean the build is
+broken; it means the app has no Apple-issued signature attached to vouch for
+it.
 
-For local testing:
+### Installing and opening the DMG
 
-1. Open the DMG.
-2. Drag `Deplo.app` into `Applications`.
-3. Control-click the app and select **Open**.
-4. Confirm the macOS security prompt.
+1. Download or copy `Deplo-<version>-arm64.dmg`.
+2. Double-click it to mount the disk image.
+3. Drag `Deplo.app` into the `Applications` shortcut shown in the same
+   window.
+4. Eject the mounted DMG and open `Deplo` from `Applications` (Launchpad or
+   Finder).
+5. If macOS blocks the launch with *"Deplo.app" is damaged and can't be
+   opened* or *can't be opened because Apple cannot check it for malicious
+   software*, go to **System Settings → Privacy & Security**, scroll to the
+   bottom, and click **Open Anyway** next to the blocked-app notice, then
+   confirm in the dialog that appears (you may be asked for your password or
+   Touch ID). On older macOS versions, Control-click (or right-click) the app
+   in `Applications`, choose **Open**, and confirm the prompt instead — only
+   do either if you trust the source of this build.
 
-If macOS still blocks the local build, remove the quarantine attribute from the
-copied application:
+### Optional: clearing the quarantine attribute manually
+
+macOS tags every file downloaded from the internet (including a mounted DMG's
+contents, once copied out) with a `com.apple.quarantine` extended attribute,
+which is what triggers the Gatekeeper prompt above. If the **Open Anyway**
+flow above doesn't resolve it, the quarantine attribute can be removed by hand
+from a Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/Deplo.app
+xattr -cr "/Applications/Deplo.app"
 ```
 
-For public distribution, configure an Apple Developer ID Application
-certificate and notarization credentials. `electron-builder` supports the
-standard environment variables:
+**Security implications — read before running this:** `xattr -cr` strips
+**every** extended attribute from the app bundle, including the quarantine
+flag, which is the same signal Gatekeeper uses to warn about *any*
+unidentified or tampered software, not just this app. Running it tells macOS
+to stop checking this specific copy entirely. Only run it against a build you
+built yourself or otherwise fully trust — never run it against a DMG from an
+untrusted or unexpected source as a way to "get past" a security warning.
+This command is never run automatically by the build or by this
+documentation; it is a manual, user-initiated opt-out.
+
+### Public distribution (not configured here)
+
+For a build that opens without any Gatekeeper prompt — e.g. distributing to
+users outside your own machine — you would additionally need a paid Apple
+Developer ID Application certificate and notarization credentials, supplied
+to `electron-builder` via the standard environment variables:
 
 ```text
 CSC_NAME
@@ -149,8 +203,13 @@ APPLE_APP_SPECIFIC_PASSWORD
 APPLE_TEAM_ID
 ```
 
-Never commit certificates, passwords, API keys, or other secrets to the
-repository.
+None of these are configured, required, or read by the current `build:mac`
+script — `mac.identity: null`, `mac.notarize: false`, and
+`mac.gatekeeperAssess: false` in `package.json`'s `build` config explicitly
+disable signing, notarization, and the local Gatekeeper-assessment check for
+every macOS build, regardless of what certificates may or may not be present
+in the local keychain. Never commit certificates, passwords, API keys, or
+other secrets to the repository.
 
 ## Validation commands
 
@@ -186,6 +245,7 @@ scripts/             Build support scripts
 | `npm run dev:web` | Start only the Next.js development server |
 | `npm run build:web` | Build the standalone Next.js application |
 | `npm run build:desktop` | Build platform desktop installers |
+| `npm run build:mac` | Build an unsigned macOS arm64 DMG + ZIP |
 | `npm run start:desktop` | Launch the locally built desktop application |
 | `npm run typecheck` | Run the TypeScript compiler without emitting files |
 | `npm run lint` | Run ESLint |

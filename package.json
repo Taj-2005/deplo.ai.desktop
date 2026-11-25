@@ -9,6 +9,7 @@
     "dev:web": "next dev",
     "build:web": "next build && node scripts/copy-standalone-assets.mjs",
     "build:desktop": "npm run build:web && electron-builder",
+    "build:mac": "npm run build:web && electron-builder --mac --arm64",
     "start": "next start",
     "start:desktop": "electron .",
     "lint": "eslint",
@@ -59,7 +60,21 @@
     },
     "mac": {
       "category": "public.app-category.developer-tools",
-      "icon": "electron/assets/icon.icns"
+      "icon": "electron/assets/icon.icns",
+      "target": [
+        { "target": "dmg", "arch": ["arm64"] },
+        { "target": "zip", "arch": ["arm64"] }
+      ],
+      "identity": null,
+      "notarize": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "sign": false,
+      "contents": [
+        { "x": 130, "y": 220, "type": "file" },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
     },
     "linux": {
       "target": "AppImage",
