@@ -223,7 +223,34 @@ function createWindow() {
     handleNavigation(event, url);
   });
 
-  void mainWindow.loadURL(getAppUrl());
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+    console.error("[deplo] did-fail-load:", errorCode, errorDescription, validatedURL);
+  });
+
+  mainWindow.webContents.on("render-process-gone", (_event, details) => {
+    console.error("[deplo] render-process-gone:", JSON.stringify(details));
+  });
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    console.log("[deplo] did-finish-load:", mainWindow.webContents.getURL());
+  });
+
+  mainWindow.on("ready-to-show", () => {
+    console.log(
+      "[deplo] ready-to-show, bounds:",
+      JSON.stringify(mainWindow.getBounds()),
+      "visible:",
+      mainWindow.isVisible(),
+      "minimized:",
+      mainWindow.isMinimized(),
+    );
+    mainWindow.show();
+    mainWindow.focus();
+  });
+
+  mainWindow.loadURL(getAppUrl()).catch((error) => {
+    console.error("[deplo] loadURL rejected:", error);
+  });
 }
 
 app.whenReady().then(async () => {
