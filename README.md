@@ -144,11 +144,25 @@ foreground when the link is activated.
 
 `npm run build:mac` (and `build:desktop` on macOS) produce an **unsigned**
 build: no Apple Developer ID certificate and no notarization are applied.
-This is a deliberate, free development/testing distribution setup — macOS's
-Gatekeeper will not recognize the app as coming from an identified developer,
-and will warn when it's first opened. That warning does not mean the build is
-broken; it means the app has no Apple-issued signature attached to vouch for
-it.
+This is a deliberate, free development/testing distribution setup. The app
+is additionally **ad-hoc signed** after packaging (`electron/afterPack.cjs`,
+`codesign --sign -`) — a free, local, no-identity signature that requires no
+Apple account or certificate. It does not make Gatekeeper trust the app, but
+it satisfies Apple Silicon's requirement that an arm64 binary carry *some*
+signature, which is what keeps macOS from hard-blocking it outright.
+
+### The two different Gatekeeper messages
+
+- ***"Deplo.app" is damaged and can't be opened. You should move it to the
+  Bin.*** — this means the arm64 binary has **no signature at all**. It
+  should no longer happen on DMGs built after the ad-hoc-signing fix above;
+  if you see it on an older downloaded build, re-download the latest release
+  or use the `xattr` command below — there is no "Open Anyway" button for
+  this specific message.
+- ***"Deplo" cannot be opened because Apple cannot check it for malicious
+  software*** (or *"...is from an unidentified developer"*) — this is the
+  normal, expected warning for any unsigned-by-Apple app, including this
+  ad-hoc-signed one, and **does** have an override.
 
 ### Installing and opening the DMG
 
@@ -158,9 +172,8 @@ it.
    window.
 4. Eject the mounted DMG and open `Deplo` from `Applications` (Launchpad or
    Finder).
-5. If macOS blocks the launch with *"Deplo.app" is damaged and can't be
-   opened* or *can't be opened because Apple cannot check it for malicious
-   software*, go to **System Settings → Privacy & Security**, scroll to the
+5. If macOS blocks the launch with the *"Apple cannot check it for malicious
+   software"* message, go to **System Settings → Privacy & Security**, scroll to the
    bottom, and click **Open Anyway** next to the blocked-app notice, then
    confirm in the dialog that appears (you may be asked for your password or
    Touch ID). On older macOS versions, Control-click (or right-click) the app
