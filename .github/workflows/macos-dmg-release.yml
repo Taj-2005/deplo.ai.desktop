@@ -1,0 +1,84 @@
+name: macOS DMG release
+
+on:
+  push:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and publish macOS DMG
+    runs-on: macos-14
+    steps:
+      - name: Check out pushed commit
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build unsigned arm64 DMG
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:mac
+
+      - name: Rename artifacts with commit SHA
+        id: artifact
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          short_sha="${COMMIT_SHA:0:7}"
+
+          dmg_src="$(find dist -maxdepth 1 -name '*.dmg' | head -n 1)"
+          zip_src="$(find dist -maxdepth 1 -name '*-mac.zip' | head -n 1)"
+          test -s "$dmg_src"
+          test -s "$zip_src"
+
+          dmg_out="dist/deplo-desktop-macos-arm64-${short_sha}.dmg"
+          zip_out="dist/deplo-desktop-macos-arm64-${short_sha}.zip"
+          cp "$dmg_src" "$dmg_out"
+          cp "$zip_src" "$zip_out"
+
+          echo "dmg=$dmg_out" >> "$GITHUB_OUTPUT"
+          echo "zip=$zip_out" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare release metadata
+        id: release
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          branch_slug="${BRANCH_NAME//\//-}"
+          short_sha="${COMMIT_SHA:0:7}"
+          echo "tag=macos-${branch_slug}-${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "name=macOS DMG (unsigned) · ${BRANCH_NAME} · ${short_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish DMG to GitHub Releases
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          prerelease: ${{ github.ref != 'refs/heads/main' }}
+          make_latest: ${{ github.ref == 'refs/heads/main' }}
+          generate_release_notes: true
+          body: >-
+            Unsigned, ad-hoc macOS (Apple Silicon / arm64) build. No Apple
+            Developer ID signature or notarization — macOS Gatekeeper will
+            warn on first launch. See the desktop client README's "macOS
+            first launch" section for how to open it (System Settings →
+            Privacy & Security → Open Anyway).
+          files: |
+            ${{ steps.artifact.outputs.dmg }}
+            ${{ steps.artifact.outputs.zip }}
