@@ -42,6 +42,9 @@
     "appId": "ai.deplo.desktop",
     "productName": "Deplo",
     "asar": true,
+    "asarUnpack": [
+      ".next/standalone/**/*"
+    ],
     "protocols": [
       {
         "name": "Deplo Desktop",
