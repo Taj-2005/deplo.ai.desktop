@@ -150,7 +150,17 @@ function handleNavigation(event, url) {
 }
 
 function startNextServer() {
-  const serverPath = path.join(app.getAppPath(), ".next", "standalone", "server.js");
+  // server.js runs `process.chdir(__dirname)` on startup, and chdir is a raw
+  // syscall — it cannot enter a path inside app.asar (a single file, not a
+  // real directory). Electron only auto-redirects asar-unpacked paths when
+  // the unpacked file is spawned as the exec target itself; here it's just a
+  // string argument to `process.execPath`, so that redirection never kicks
+  // in. Rewriting app.asar -> app.asar.unpacked explicitly (asarUnpack in
+  // package.json extracts .next/standalone there) points at the real files
+  // on disk instead of relying on redirection that doesn't apply.
+  const serverPath = path
+    .join(app.getAppPath(), ".next", "standalone", "server.js")
+    .replace("app.asar", "app.asar.unpacked");
 
   nextServer = spawn(process.execPath, [serverPath], {
     env: {
